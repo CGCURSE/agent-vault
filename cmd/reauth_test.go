@@ -157,7 +157,9 @@ func TestFetchUserVaults_401PreservesServerMessage(t *testing.T) {
 func TestMintScopedSession_VaultResolutionMemoized(t *testing.T) {
 	// Isolate $HOME so a developer-set ~/.agent-vault/context doesn't
 	// short-circuit resolveVaultForRun before fetchUserVaults runs.
-	t.Setenv("HOME", t.TempDir())
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 
 	var vaultsHits, sessionsHits int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"syscall"
+
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -42,8 +42,6 @@ func utcTimePtr(t *time.Time) *time.Time {
 	u := t.UTC()
 	return &u
 }
-
-
 
 // nullableString returns nil for empty strings, enabling SQL NULL inserts.
 func nullableString(s string) interface{} {
@@ -77,25 +75,25 @@ type SQLStore struct {
 func Open(dbPath string) (*SQLStore, error) {
 	// Set restrictive umask before SQLite creates the file to avoid a
 	// window where the DB is world-readable (default umask is typically 0022).
-	oldUmask := syscall.Umask(0077)
+	oldUmask := restrictFileCreation()
 
 	dsn := dbPath + "?_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(on)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
-		syscall.Umask(oldUmask)
+		restoreFileCreation(oldUmask)
 		return nil, fmt.Errorf("opening sqlite: %w", err)
 	}
 
 	db.SetMaxOpenConns(1)
 
 	if err := db.Ping(); err != nil {
-		syscall.Umask(oldUmask)
+		restoreFileCreation(oldUmask)
 		_ = db.Close()
 		return nil, fmt.Errorf("pinging sqlite: %w", err)
 	}
 
 	// Restore original umask now that the file exists.
-	syscall.Umask(oldUmask)
+	restoreFileCreation(oldUmask)
 
 	// Ensure permissions are correct even for pre-existing files.
 	if err := os.Chmod(dbPath, 0600); err != nil {

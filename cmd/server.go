@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
+
 	"time"
 
 	"github.com/Infisical/agent-vault/internal/auth"
@@ -660,7 +660,7 @@ func spawnDetached(cmd *cobra.Command, masterKey *auth.MasterKey, initialized bo
 		childEnv = append(childEnv, "DATABASE_URL="+flagURL)
 	}
 	child.Env = childEnv
-	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	configureDetachedChild(child)
 
 	if err := child.Start(); err != nil {
 		_ = pr.Close()

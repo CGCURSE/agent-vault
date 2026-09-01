@@ -3,15 +3,21 @@ package session
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
+func setTestHome(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	return home
+}
+
 func TestSaveAndLoad(t *testing.T) {
 	// Use a temp dir to avoid touching the real ~/.agent-vault
-	tmpDir := t.TempDir()
-	origHome := os.Getenv("HOME")
-	t.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", origHome)
+	tmpDir := setTestHome(t)
 
 	sess := &ClientSession{
 		Token:   "test-token-123",
@@ -28,8 +34,10 @@ func TestSaveAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("session file not found: %v", err)
 	}
-	if perm := info.Mode().Perm(); perm != 0600 {
-		t.Fatalf("expected permissions 0600, got %o", perm)
+	if runtime.GOOS != "windows" {
+		if perm := info.Mode().Perm(); perm != 0600 {
+			t.Fatalf("expected permissions 0600, got %o", perm)
+		}
 	}
 
 	loaded, err := Load()
@@ -48,8 +56,7 @@ func TestSaveAndLoad(t *testing.T) {
 }
 
 func TestLoadNonExistent(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	_ = setTestHome(t)
 
 	loaded, err := Load()
 	if err != nil {
@@ -61,8 +68,7 @@ func TestLoadNonExistent(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	_ = setTestHome(t)
 
 	sess := &ClientSession{Token: "to-delete", Address: "http://localhost:14321"}
 	if err := Save(sess); err != nil {
@@ -83,8 +89,7 @@ func TestClear(t *testing.T) {
 }
 
 func TestClearNonExistent(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
+	_ = setTestHome(t)
 
 	// Should not error when file doesn't exist
 	if err := Clear(); err != nil {

@@ -347,6 +347,9 @@ func TestEnsureServerStopped_BlocksWithDATABASE_URL(t *testing.T) {
 }
 
 func TestEnsureServerStopped_AllowsForceWithDATABASE_URL(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
 	t.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/testdb")
 	err := ensureServerStopped(true)
 	if err != nil {
@@ -579,7 +582,10 @@ func TestLoadProjectVault(t *testing.T) {
 
 	t.Run("missing file returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		if got := loadProjectVault(); got != "" {
 			t.Errorf("expected empty, got %q", got)
 		}
@@ -587,7 +593,10 @@ func TestLoadProjectVault(t *testing.T) {
 
 	t.Run("valid file returns vault name", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		os.WriteFile(ProjectConfigFile, []byte(`{"vault": "staging"}`), 0o600)
 		if got := loadProjectVault(); got != "staging" {
 			t.Errorf("expected %q, got %q", "staging", got)
@@ -596,7 +605,10 @@ func TestLoadProjectVault(t *testing.T) {
 
 	t.Run("malformed JSON returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		os.WriteFile(ProjectConfigFile, []byte(`not json`), 0o600)
 		if got := loadProjectVault(); got != "" {
 			t.Errorf("expected empty, got %q", got)
@@ -605,7 +617,10 @@ func TestLoadProjectVault(t *testing.T) {
 
 	t.Run("empty vault field returns empty", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		os.WriteFile(ProjectConfigFile, []byte(`{"vault": ""}`), 0o600)
 		if got := loadProjectVault(); got != "" {
 			t.Errorf("expected empty, got %q", got)
@@ -614,6 +629,10 @@ func TestLoadProjectVault(t *testing.T) {
 }
 
 func TestResolveVaultWithProjectFile(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("AGENT_VAULT", "")
 	origDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -622,7 +641,10 @@ func TestResolveVaultWithProjectFile(t *testing.T) {
 
 	t.Run("project file used when no flag", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		os.WriteFile(ProjectConfigFile, []byte(`{"vault": "team-vault"}`), 0o600)
 
 		cmd := &cobra.Command{}
@@ -635,7 +657,10 @@ func TestResolveVaultWithProjectFile(t *testing.T) {
 
 	t.Run("flag takes priority over project file", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		os.WriteFile(ProjectConfigFile, []byte(`{"vault": "team-vault"}`), 0o600)
 
 		cmd := &cobra.Command{}
@@ -649,7 +674,10 @@ func TestResolveVaultWithProjectFile(t *testing.T) {
 
 	t.Run("falls back to default when no file", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 
 		cmd := &cobra.Command{}
 		cmd.Flags().String("vault", "", "")
@@ -669,7 +697,10 @@ func TestResolveVaultWithEnvVar(t *testing.T) {
 
 	t.Run("env var used when no flag", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		t.Setenv("AGENT_VAULT_VAULT", "env-vault")
 
 		cmd := &cobra.Command{}
@@ -682,7 +713,10 @@ func TestResolveVaultWithEnvVar(t *testing.T) {
 
 	t.Run("flag takes priority over env var", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		t.Setenv("AGENT_VAULT_VAULT", "env-vault")
 
 		cmd := &cobra.Command{}
@@ -696,7 +730,10 @@ func TestResolveVaultWithEnvVar(t *testing.T) {
 
 	t.Run("env var takes priority over project file", func(t *testing.T) {
 		dir := t.TempDir()
-		os.Chdir(dir)
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
 		os.WriteFile(ProjectConfigFile, []byte(`{"vault": "project-vault"}`), 0o600)
 		t.Setenv("AGENT_VAULT_VAULT", "env-vault")
 

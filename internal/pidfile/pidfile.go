@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 const fileName = "agent-vault.pid"
@@ -89,6 +88,5 @@ func Remove() error {
 
 // IsRunning checks whether a process with the given PID is still running.
 func IsRunning(pid int) bool {
-	err := syscall.Kill(pid, 0)
-	return err == nil || errors.Is(err, syscall.EPERM)
+	return isRunning(pid)
 }

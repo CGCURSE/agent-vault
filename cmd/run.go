@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"time"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,7 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
+	"time"
 
 	"github.com/Infisical/agent-vault/internal/isolation"
 	"github.com/Infisical/agent-vault/internal/session"
@@ -222,7 +221,7 @@ func runCmdRunE(cmd *cobra.Command, args []string) error {
 	// gosec G702: this is an exec wrapper — the whole purpose is to run a
 	// user-specified binary with user-specified args, identical to the
 	// rationale for the G204 exclusion in .golangci.yml.
-	return syscall.Exec(binary, args, env) //nolint:gosec
+	return runChild(binary, args, env) //nolint:gosec
 }
 
 // knownAgents maps CLI binary base-names to the (agentName, skillsDir)
@@ -580,7 +579,6 @@ func augmentEnvWithMITM(env []string, addr, token, vault, caPath string) ([]stri
 	if err := os.WriteFile(caPath, pem, 0o600); err != nil { //nolint:gosec
 		return env, 0, false, fmt.Errorf("write CA: %w", err)
 	}
-
 
 	env = stripEnvKeys(env, mitmInjectedKeys)
 	env = append(env, isolation.BuildProxyEnv(isolation.ProxyEnvParams{
