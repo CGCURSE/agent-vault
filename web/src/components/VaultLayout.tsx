@@ -1,7 +1,8 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useRouteContext } from "@tanstack/react-router";
 import type { AuthContext, VaultContext } from "../router";
 import Navbar from "./Navbar";
+import Sheet from "./Sheet";
 
 // Source of truth for vault tab ids: the union and active-tab lookup derive
 // from it. An id must equal its route path segment. New tab = entry here plus
@@ -33,6 +34,7 @@ export default function VaultLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isExiting, setIsExiting] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [discoveredCount, setDiscoveredCount] = useState(0);
@@ -89,6 +91,23 @@ export default function VaultLayout() {
   const activeTab: VaultTab = (VAULT_TABS as readonly string[]).includes(lastSegment)
     ? lastSegment
     : "services";
+
+  // Any route change closes the mobile drawer (drawer links to a new path
+  // land here; same-path clicks close via onNavigate instead).
+  useEffect(() => {
+    setIsDrawerOpen(false);
+  }, [location.pathname]);
+
+  // A drawer hidden by the desktop breakpoint must also release its focus
+  // trap and body scroll lock when the viewport grows past that breakpoint.
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 64rem)");
+    function handleDesktopChange(event: MediaQueryListEvent) {
+      if (event.matches) setIsDrawerOpen(false);
+    }
+    desktop.addEventListener("change", handleDesktopChange);
+    return () => desktop.removeEventListener("change", handleDesktopChange);
+  }, []);
 
   const mainNav: NavItem[] = [
     {
@@ -189,89 +208,64 @@ export default function VaultLayout() {
     },
   ];
 
+  const settingsNav: NavItem = {
+    id: "settings",
+    label: "Settings",
+    icon: (
+      <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    ),
+  };
+
+  function closeDrawer() {
+    setIsDrawerOpen(false);
+  }
+
+  // Sidebar: play the exit animation, then navigate to the vaults list.
+  function handleSidebarAllVaults(e: MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    if (isExiting) return;
+    setIsExiting(true);
+    const aside = sidebarRef.current;
+    if (aside) {
+      aside.addEventListener("animationend", (e) => { if (e.target === aside) navigate({ to: "/" }); }, { once: true });
+    } else {
+      navigate({ to: "/" });
+    }
+  }
+
+  // Drawer: navigate immediately; the route change closes the drawer.
+  function handleDrawerAllVaults(e: MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    closeDrawer();
+    navigate({ to: "/" });
+  }
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-bg">
-      <Navbar email={auth.email} vaultName={vaultContext.vault_name} isOwner={auth.is_owner} />
+      <Navbar
+        email={auth.email}
+        vaultName={vaultContext.vault_name}
+        isOwner={auth.is_owner}
+        onOpenNavigation={() => setIsDrawerOpen(true)}
+      />
       <div className="flex flex-1">
-        {/* Sidebar */}
+        {/* Sidebar (lg and up) */}
         <aside
           ref={sidebarRef}
-          className={`w-[220px] flex-shrink-0 border-r border-border bg-surface flex flex-col ${isExiting ? "animate-sidebar-out" : "animate-sidebar-in"}`}
+          className={`hidden lg:flex w-[220px] flex-shrink-0 border-r border-border bg-surface flex-col ${isExiting ? "animate-sidebar-out" : "animate-sidebar-in"}`}
         >
-          <div className="px-4 pt-5 pb-3">
-            <a
-              href="/"
-              onClick={(e) => {
-                e.preventDefault();
-                if (isExiting) return;
-                setIsExiting(true);
-                const aside = sidebarRef.current;
-                if (aside) {
-                  aside.addEventListener("animationend", (e) => { if (e.target === aside) navigate({ to: "/" }); }, { once: true });
-                } else {
-                  navigate({ to: "/" });
-                }
-              }}
-              className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              All vaults
-            </a>
-          </div>
-
-          <nav className="flex-1 px-3 pb-4 flex flex-col">
-            <ul className="space-y-0.5">
-              {mainNav.map((item) => (
-                <SidebarItem
-                  key={item.id}
-                  item={item}
-                  active={activeTab === item.id}
-                  vaultName={vaultContext.vault_name}
-                />
-              ))}
-            </ul>
-
-            {showMembersNav && (
-              <>
-                <div className="mt-6 mb-2 px-3">
-                  <span className="text-[11px] font-semibold text-text-dim uppercase tracking-wider">
-                    Members
-                  </span>
-                </div>
-                <ul className="space-y-0.5">
-                  {memberNav.map((item) => (
-                    <SidebarItem
-                      key={item.id}
-                      item={item}
-                      active={activeTab === item.id}
-                      vaultName={vaultContext.vault_name}
-                    />
-                  ))}
-                </ul>
-              </>
-            )}
-
-            <div className="mt-auto pt-4">
-              <ul className="space-y-0.5">
-                <SidebarItem
-                  item={{
-                    id: "settings",
-                    label: "Settings",
-                    icon: (
-                      <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                      </svg>
-                    ),
-                  }}
-                  active={activeTab === "settings"}
-                  vaultName={vaultContext.vault_name}
-                />
-              </ul>
-            </div>
-          </nav>
+          <VaultNavigation
+            vaultName={vaultContext.vault_name}
+            activeTab={activeTab}
+            mainNav={mainNav}
+            memberNav={memberNav}
+            settingsNav={settingsNav}
+            showMembersNav={showMembersNav}
+            onAllVaults={handleSidebarAllVaults}
+          />
         </aside>
 
         {/* Content */}
@@ -279,7 +273,118 @@ export default function VaultLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Navigation drawer (below lg) */}
+      <div className="lg:hidden">
+        <Sheet
+          open={isDrawerOpen}
+          onClose={closeDrawer}
+          side="left"
+          eyebrow="Vault"
+          title={vaultContext.vault_name}
+          widthClass="max-w-[320px]"
+        >
+          <div className="-mx-6 -my-5">
+            <VaultNavigation
+              vaultName={vaultContext.vault_name}
+              activeTab={activeTab}
+              mainNav={mainNav}
+              memberNav={memberNav}
+              settingsNav={settingsNav}
+              showMembersNav={showMembersNav}
+              onAllVaults={handleDrawerAllVaults}
+              onNavigate={closeDrawer}
+            />
+          </div>
+        </Sheet>
+      </div>
     </div>
+  );
+}
+
+// Single navigation renderer and item source shared by the desktop sidebar
+// and the mobile drawer. Route definitions live only in SidebarItem.
+function VaultNavigation({
+  vaultName,
+  activeTab,
+  mainNav,
+  memberNav,
+  settingsNav,
+  showMembersNav,
+  onAllVaults,
+  onNavigate,
+}: {
+  vaultName: string;
+  activeTab: VaultTab;
+  mainNav: NavItem[];
+  memberNav: NavItem[];
+  settingsNav: NavItem;
+  showMembersNav: boolean;
+  onAllVaults: (e: MouseEvent<HTMLAnchorElement>) => void;
+  /** Host hook run after a navigation click (the drawer closes itself). */
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      <div className="px-4 pt-5 pb-3">
+        <a
+          href="/"
+          onClick={onAllVaults}
+          className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          All vaults
+        </a>
+      </div>
+
+      <nav className="flex-1 px-3 pb-4 flex flex-col" aria-label="Vault sections">
+        <ul className="space-y-0.5">
+          {mainNav.map((item) => (
+            <SidebarItem
+              key={item.id}
+              item={item}
+              active={activeTab === item.id}
+              vaultName={vaultName}
+              onActivate={onNavigate}
+            />
+          ))}
+        </ul>
+
+        {showMembersNav && (
+          <>
+            <div className="mt-6 mb-2 px-3">
+              <span className="text-[11px] font-semibold text-text-dim uppercase tracking-wider">
+                Members
+              </span>
+            </div>
+            <ul className="space-y-0.5">
+              {memberNav.map((item) => (
+                <SidebarItem
+                  key={item.id}
+                  item={item}
+                  active={activeTab === item.id}
+                  vaultName={vaultName}
+                  onActivate={onNavigate}
+                />
+              ))}
+            </ul>
+          </>
+        )}
+
+        <div className="mt-auto pt-4">
+          <ul className="space-y-0.5">
+            <SidebarItem
+              item={settingsNav}
+              active={activeTab === "settings"}
+              vaultName={vaultName}
+              onActivate={onNavigate}
+            />
+          </ul>
+        </div>
+      </nav>
+    </>
   );
 }
 
@@ -287,16 +392,19 @@ function SidebarItem({
   item,
   active,
   vaultName,
+  onActivate,
 }: {
   item: NavItem;
   active: boolean;
   vaultName: string;
+  onActivate?: () => void;
 }) {
   const tabPath = `/vaults/${encodeURIComponent(vaultName)}/${item.id}`;
   return (
     <li>
       <Link
         to={tabPath}
+        onClick={onActivate}
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors no-underline ${
           active
             ? "bg-bg/50 text-text font-semibold"

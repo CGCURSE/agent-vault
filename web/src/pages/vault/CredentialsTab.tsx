@@ -5,6 +5,7 @@ import { InfoBanner } from "../../components/shared";
 import DropdownMenu from "../../components/DropdownMenu";
 import DataTable, { type Column } from "../../components/DataTable";
 import Modal from "../../components/Modal";
+import Sheet from "../../components/Sheet";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import FormField from "../../components/FormField";
@@ -15,35 +16,36 @@ import { Link } from "@tanstack/react-router";
 import { apiFetch, apiRequest } from "../../lib/api";
 import { OAUTH_PROVIDERS } from "../../lib/oauthProviders";
 
+interface CredentialInfo {
+  key: string;
+  type?: string;
+  connected_at?: string;
+  last_refreshed_at?: string;
+  last_refresh_error?: string;
+  authorization_url?: string;
+  token_url?: string;
+  client_id?: string;
+  scopes?: string;
+  client_secret?: string;
+  token_auth_method?: string;
+  access_token?: string;
+  refresh_token?: string;
+  unavailable?: boolean;
+}
+
 export default function CredentialsTab() {
   const router = useRouter();
   const { vaultName, vaultRole, credentialStore } = useVaultParams();
   const externalKind = credentialStore?.kind;
   const isExternal = !!externalKind;
   const pollSecs = credentialStore?.poll_interval_seconds;
-  interface CredentialInfo {
-    key: string;
-    type?: string;
-    connected_at?: string;
-    last_refreshed_at?: string;
-    last_refresh_error?: string;
-    authorization_url?: string;
-    token_url?: string;
-    client_id?: string;
-    scopes?: string;
-    client_secret?: string;
-    token_auth_method?: string;
-    access_token?: string;
-    refresh_token?: string;
-    unavailable?: boolean;
-  }
   const [credentials, setCredentials] = useState<CredentialInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState("");
 
-  // Add/Edit modal state
+  // Add/Edit sheet state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
@@ -215,6 +217,7 @@ export default function CredentialsTab() {
   // Reveal state: tracks which credential values have been fetched and are visible.
   const [revealedValues, setRevealedValues] = useState<Record<string, string>>({});
   const [revealing, setRevealing] = useState<Record<string, boolean>>({});
+  const [revealErrors, setRevealErrors] = useState<Record<string, string>>({});
 
   async function toggleReveal(key: string) {
     if (revealedValues[key] !== undefined) {
@@ -227,6 +230,11 @@ export default function CredentialsTab() {
       return;
     }
     setRevealing((prev) => ({ ...prev, [key]: true }));
+    setRevealErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
     try {
       const resp = await apiFetch(
         `/v1/credentials?vault=${encodeURIComponent(vaultName)}&reveal=true&key=${encodeURIComponent(key)}`
@@ -235,12 +243,202 @@ export default function CredentialsTab() {
         const data = await resp.json();
         const val = data.credentials?.[0]?.value ?? "";
         setRevealedValues((prev) => ({ ...prev, [key]: val }));
+      } else {
+        const data = await resp.json().catch(() => ({}));
+        setRevealErrors((prev) => ({ ...prev, [key]: data.error || "Failed to reveal value. Try again." }));
       }
     } catch {
-      // Silently fail — user can retry.
+      setRevealErrors((prev) => ({ ...prev, [key]: "Network error." }));
     } finally {
       setRevealing((prev) => ({ ...prev, [key]: false }));
     }
+  }
+
+  /* ── Shared rendering: desktop table and mobile records use the same
+     state, handlers, and value presentation below. ── */
+
+  function typeLabel(cred: CredentialInfo): string {
+    return cred.type === "oauth" ? "OAuth" : cred.type === "dynamic" ? "Dynamic" : "Static";
+  }
+
+  function renderValueText(cred: CredentialInfo) {
+    if (cred.unavailable) {
+      return (
+        <span className="text-sm text-warning italic" title="The Infisical machine identity could not lease this dynamic secret. Grant it dynamic-secret lease permission.">
+          Unavailable (check lease permissions)
+        </span>
+      );
+    }
+    if (cred.type === "oauth" && !cred.connected_at) {
+      return <span className="text-sm text-text-dim italic">Not connected</span>;
+    }
+    if (revealedValues[cred.key] !== undefined) {
+      return (
+        <span className="text-sm font-mono text-text break-all select-all">
+          {revealedValues[cred.key]}
+        </span>
+      );
+    }
+    return (
+      <span className="text-sm text-text-dim select-none">
+        ••••••••
+      </span>
+    );
+  }
+
+  const canRevealValue = (cred: CredentialInfo) =>
+    !cred.unavailable && (cred.type !== "oauth" || !!cred.connected_at);
+
+  function renderRevealControl(cred: CredentialInfo, compact: boolean) {
+    const revealed = revealedValues[cred.key] !== undefined;
+    const busy = !!revealing[cred.key];
+    const actionLabel = revealed ? "Hide value" : "Reveal value";
+    return (
+      <button
+        onClick={() => toggleReveal(cred.key)}
+        disabled={busy}
+        className={
+          compact
+            ? "inline-flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-medium text-text hover:bg-surface-hover transition-colors disabled:opacity-50"
+            : "ml-1 p-1 rounded text-text-dim hover:text-text transition-colors disabled:opacity-50"
+        }
+        title={compact ? undefined : actionLabel}
+        aria-label={`${actionLabel} for ${cred.key}`}
+      >
+        {busy ? (
+          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          </svg>
+        ) : revealed ? (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+        {compact && <span>{busy ? "Revealing…" : revealed ? "Hide" : "Reveal"}</span>}
+      </button>
+    );
+  }
+
+  function renderRevealError(cred: CredentialInfo) {
+    const msg = revealErrors[cred.key];
+    if (!msg) return null;
+    return (
+      <p role="alert" className="mt-1 text-xs text-danger">
+        {msg}
+      </p>
+    );
+  }
+
+  // Value presentation shared by the desktop table cell and the mobile record.
+  function renderValueArea(cred: CredentialInfo, compact: boolean) {
+    return (
+      <div>
+        {compact && (
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-text-muted">
+            Value
+          </div>
+        )}
+        <div className={compact ? "flex items-center justify-between gap-3" : "flex items-center gap-2"}>
+          <span className={compact ? "min-w-0 flex-1" : undefined}>{renderValueText(cred)}</span>
+          {canRevealValue(cred) && renderRevealControl(cred, compact)}
+        </div>
+        {renderRevealError(cred)}
+      </div>
+    );
+  }
+
+  function openEdit(key: string) {
+    setEditingKey(key);
+    setModalOpen(true);
+  }
+
+  // Why editing is unavailable, where the current source can distinguish it.
+  function editLockReason(cred: CredentialInfo): string | null {
+    if (cred.type === "dynamic") return "Leased dynamically from Infisical — manage it in the upstream store.";
+    if (isExternal) return `Synced read-only from ${externalKind} — edit credentials in the upstream store.`;
+    if (vaultRole === "proxy") return "Proxy role has view-only access to credentials.";
+    if (vaultRole === "member") return "Only vault admins can edit or delete credentials.";
+    return null;
+  }
+
+  const emptyTitle = isExternal ? "No credentials synced yet" : "No credentials stored";
+  const emptyDescription = isExternal
+    ? "Add credentials in the upstream system; they'll appear here after the next sync."
+    : "Credentials will appear here when agents request them and you approve them.";
+
+  // Compact stacked credential record shown below md.
+  function renderMobileCard(cred: CredentialInfo) {
+    const editable = isAdmin && cred.type !== "dynamic";
+    const lockReason = editLockReason(cred);
+    return (
+      <article key={cred.key} className="rounded-xl border border-border bg-surface p-4">
+        <div className="flex items-start gap-2">
+          <svg
+            className="w-4 h-4 mt-0.5 text-text-dim flex-shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span className="min-w-0 break-all text-sm font-mono text-text">{cred.key}</span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center rounded-full border border-border bg-bg px-2 py-0.5 text-xs text-text-muted">
+            {typeLabel(cred)}
+          </span>
+          {cred.type === "dynamic" && (
+            <span className="inline-flex items-center rounded-full border border-warning/20 bg-warning-bg px-2 py-0.5 text-xs text-warning">
+              Leased from Infisical
+            </span>
+          )}
+          {isExternal && (
+            <span className="inline-flex items-center rounded-full border border-border bg-bg px-2 py-0.5 text-xs text-text-dim">
+              Synced read-only
+            </span>
+          )}
+        </div>
+        {canReveal && <div className="mt-3">{renderValueArea(cred, true)}</div>}
+        {editable ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => openEdit(cred.key)}
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-medium text-text hover:bg-surface-hover transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit
+            </button>
+            <button
+              onClick={() => openDeleteModal(cred.key)}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-danger/20 px-4 text-sm font-medium text-danger hover:bg-danger-bg transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        ) : (
+          lockReason && <p className="mt-3 text-xs text-text-dim">{lockReason}</p>
+        )}
+      </article>
+    );
   }
 
   const columns: Column<CredentialInfo>[] = [
@@ -270,61 +468,14 @@ export default function CredentialsTab() {
       key: "type",
       header: "Type",
       className: "w-[140px]",
-      render: (cred) => {
-        const label =
-          cred.type === "oauth" ? "OAuth" : cred.type === "dynamic" ? "Dynamic" : "Static";
-        return <span className="text-sm text-text">{label}</span>;
-      },
+      render: (cred) => <span className="text-sm text-text">{typeLabel(cred)}</span>,
     },
     ...(canReveal
       ? [
           {
             key: "value",
             header: "Value",
-            render: (cred: CredentialInfo) => (
-              <div className="flex items-center gap-2">
-                {cred.unavailable ? (
-                  <span className="text-sm text-warning italic" title="The Infisical machine identity could not lease this dynamic secret. Grant it dynamic-secret lease permission.">
-                    Unavailable (check lease permissions)
-                  </span>
-                ) : cred.type === "oauth" && !cred.connected_at ? (
-                  <span className="text-sm text-text-dim italic">Not connected</span>
-                ) : revealedValues[cred.key] !== undefined ? (
-                  <span className="text-sm font-mono text-text break-all select-all">
-                    {revealedValues[cred.key]}
-                  </span>
-                ) : (
-                  <span className="text-sm text-text-dim select-none">
-                    ••••••••
-                  </span>
-                )}
-                {!cred.unavailable && (cred.type !== "oauth" || cred.connected_at) && (
-                  <button
-                    onClick={() => toggleReveal(cred.key)}
-                    disabled={revealing[cred.key]}
-                    className="ml-1 p-1 rounded text-text-dim hover:text-text transition-colors disabled:opacity-50"
-                    title={revealedValues[cred.key] !== undefined ? "Hide value" : "Reveal value"}
-                  >
-                    {revealing[cred.key] ? (
-                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                      </svg>
-                    ) : revealedValues[cred.key] !== undefined ? (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                )}
-              </div>
-            ),
+            render: (cred: CredentialInfo) => renderValueArea(cred, false),
           } as Column<CredentialInfo>,
         ]
       : []),
@@ -339,7 +490,7 @@ export default function CredentialsTab() {
               cred.type === "dynamic" ? null : (
                 <DropdownMenu
                   items={[
-                    { label: "Edit", onClick: () => { setEditingKey(cred.key); setModalOpen(true); } },
+                    { label: "Edit", onClick: () => openEdit(cred.key) },
                     { label: "Delete", onClick: () => openDeleteModal(cred.key), variant: "danger" as const },
                   ]}
                 />
@@ -350,8 +501,8 @@ export default function CredentialsTab() {
   ];
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-8 w-full max-w-[960px]">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
             Credentials
@@ -366,6 +517,7 @@ export default function CredentialsTab() {
               setEditingKey(null);
               setModalOpen(true);
             }}
+            className="min-h-[44px]"
           >
             <svg
               className="w-4 h-4"
@@ -385,7 +537,7 @@ export default function CredentialsTab() {
       </div>
 
       {suggestions.map((s) => (
-        <div key={s.credKey} className="mb-4 flex items-center justify-between rounded-lg border border-warning/20 bg-warning-bg px-4 py-3">
+        <div key={s.credKey} className="mb-4 flex flex-col gap-3 rounded-lg border border-warning/20 bg-warning-bg px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-text">
             <span className="font-mono text-warning">{s.credKey}</span>
             {" "}is unused. Add <span className="font-medium">{s.template.name}</span> ({s.template.host}) as a service?
@@ -394,7 +546,7 @@ export default function CredentialsTab() {
             to="/vaults/$name/services"
             params={{ name: vaultName }}
             search={{ preset: s.template.id }}
-            className="rounded border border-border bg-surface px-2.5 py-1 text-xs text-text-muted hover:bg-surface-hover hover:text-text transition-colors whitespace-nowrap"
+            className="inline-flex w-fit min-h-[44px] items-center rounded border border-border bg-surface px-3 text-xs text-text-muted hover:bg-surface-hover hover:text-text transition-colors whitespace-nowrap"
           >
             Add as service
           </Link>
@@ -412,6 +564,7 @@ export default function CredentialsTab() {
                   onClick={handleSyncNow}
                   loading={syncing}
                   disabled={syncing}
+                  className="min-h-[44px]"
                 >
                   Manual sync
                 </Button>
@@ -431,17 +584,33 @@ export default function CredentialsTab() {
       ) : error ? (
         <ErrorBanner message={error} />
       ) : (
-        <DataTable
-          columns={columns}
-          data={credentials}
-          rowKey={(cred) => cred.key}
-          emptyTitle={isExternal ? "No credentials synced yet" : "No credentials stored"}
-          emptyDescription={
-            isExternal
-              ? "Add credentials in the upstream system; they'll appear here after the next sync."
-              : "Credentials will appear here when agents request and you approve them."
-          }
-        />
+        <>
+          {/* Desktop: table at md and above */}
+          <div className="hidden md:block">
+            <DataTable
+              columns={columns}
+              data={credentials}
+              rowKey={(cred) => cred.key}
+              emptyTitle={emptyTitle}
+              emptyDescription={emptyDescription}
+            />
+          </div>
+          {/* Mobile: compact stacked records below md */}
+          <div className="md:hidden space-y-3">
+            {credentials.length === 0 ? (
+              <div className="rounded-xl border border-border bg-surface py-12 text-center">
+                <div className="max-w-[360px] mx-auto">
+                  <div className="text-base font-semibold text-text-muted mb-1">
+                    {emptyTitle}
+                  </div>
+                  <div className="text-sm text-text-muted">{emptyDescription}</div>
+                </div>
+              </div>
+            ) : (
+              credentials.map(renderMobileCard)
+            )}
+          </div>
+        </>
       )}
 
       {/* Delete confirmation modal */}
@@ -486,7 +655,7 @@ export default function CredentialsTab() {
       </Modal>
 
       {modalOpen && (
-        <CredentialModal
+        <CredentialSheet
           vaultName={vaultName}
           editingKey={editingKey}
           editingCred={editingKey ? credentials.find((c) => c.key === editingKey) : undefined}
@@ -505,15 +674,15 @@ export default function CredentialsTab() {
   );
 }
 
-/* ── Add / Edit modal ── */
+/* ── Add / Edit sheet ── */
 
 interface Entry {
   key: string;
   value: string;
 }
 
-function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved }: {
-  vaultName: string; editingKey: string | null; editingCred?: { type?: string; authorization_url?: string; token_url?: string; client_id?: string; scopes?: string; client_secret?: string; token_auth_method?: string; access_token?: string; refresh_token?: string }; onClose: () => void; onSaved: () => void;
+function CredentialSheet({ vaultName, editingKey, editingCred, onClose, onSaved }: {
+  vaultName: string; editingKey: string | null; editingCred?: CredentialInfo; onClose: () => void; onSaved: () => void;
 }) {
   const isEdit = editingKey !== null;
   const editType = editingCred?.type;
@@ -633,34 +802,51 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
     reader.readAsText(file);
   }
 
+  const footerButtonClass = "min-h-[44px] w-full sm:min-h-0 sm:w-auto";
+
   return (
-    <Modal open onClose={onClose}
+    <Sheet open onClose={onClose}
+      eyebrow="Credential"
       title={isEdit ? "Edit Credential" : "Add Credential"}
-      description={credType === "oauth" ? "Set up an OAuth 2.0 credential. The proxy automatically refreshes the access token." : "Credentials are injected into proxied requests. Values are encrypted at rest."}
-      footer={<>
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        {credType === "oauth" && !isTokenUpload && !oauthConnected ? (
-          <Button onClick={handleOAuthConnect} disabled={!canSubmitOAuthConnect} loading={oauthConnecting}>
-            {oauthConnecting ? "Waiting for authorization..." : "Connect"}
-          </Button>
-        ) : (
-          <Button onClick={handleSubmit} disabled={!canSubmit} loading={saving}>
-            {isEdit ? "Save" : credType === "oauth" && oauthConnected ? "Done" : "Add"}
-          </Button>
-        )}
-      </>}
+      headerExtra={
+        <>
+          <p className="text-sm text-text-muted">
+            {credType === "oauth" ? "Set up an OAuth 2.0 credential. The proxy automatically refreshes the access token." : "Credentials are injected into proxied requests. Values are encrypted at rest."}
+          </p>
+          {/* Pinned above the scrollable body so save/OAuth errors stay visible on small screens. */}
+          {error && (
+            <div role="alert" className="mt-3">
+              <ErrorBanner message={error} />
+            </div>
+          )}
+        </>
+      }
+      footer={
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <Button variant="secondary" onClick={onClose} className={footerButtonClass}>Cancel</Button>
+          {credType === "oauth" && !isTokenUpload && !oauthConnected ? (
+            <Button onClick={handleOAuthConnect} disabled={!canSubmitOAuthConnect} loading={oauthConnecting} className={footerButtonClass}>
+              {oauthConnecting ? "Waiting for authorization..." : "Connect"}
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={!canSubmit} loading={saving} className={footerButtonClass}>
+              {isEdit ? "Save" : credType === "oauth" && oauthConnected ? "Done" : "Add"}
+            </Button>
+          )}
+        </div>
+      }
     >
       <div className="space-y-4">
         {!isEdit && (
           <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg w-fit">
-            <button onClick={() => setCredType("static")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${credType === "static" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Static</button>
-            <button onClick={() => setCredType("oauth")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${credType === "oauth" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>OAuth</button>
+            <button onClick={() => setCredType("static")} aria-pressed={credType === "static"} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${credType === "static" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Static</button>
+            <button onClick={() => setCredType("oauth")} aria-pressed={credType === "oauth"} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${credType === "oauth" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>OAuth</button>
           </div>
         )}
 
         {credType === "static" ? (<>
           {entries.map((entry, i) => (
-            <div key={i} className="flex gap-3 items-start">
+            <div key={i} className="flex flex-col gap-3 sm:flex-row sm:items-start">
               <div className="flex-1 min-w-0">
                 <FormField label="Key"><Input placeholder="e.g. STRIPE_KEY" value={entry.key} onChange={(e) => updateEntry(i, "key", e.target.value)} readOnly={isEdit} autoFocus={!isEdit && i === 0} /></FormField>
               </div>
@@ -668,13 +854,13 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
                 <FormField label="Value"><Input placeholder="Credential value" value={entry.value} onChange={(e) => updateEntry(i, "value", e.target.value)} type="password" autoFocus={isEdit && i === 0} onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }} /></FormField>
               </div>
               {!isEdit && entries.length > 1 && (
-                <button onClick={() => removeEntry(i)} className="mt-7 w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg text-text-dim hover:text-danger hover:bg-danger-bg transition-colors">
+                <button onClick={() => removeEntry(i)} aria-label={`Remove entry ${i + 1}`} className="w-11 h-11 sm:w-8 sm:h-8 sm:mt-7 flex-shrink-0 self-end sm:self-auto flex items-center justify-center rounded-lg text-text-dim hover:text-danger hover:bg-danger-bg transition-colors">
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               )}
             </div>
           ))}
-          {!isEdit && <button onClick={addEntry} className="text-sm font-medium text-primary hover:text-primary-hover transition-colors">+ Add another</button>}
+          {!isEdit && <button onClick={addEntry} className="inline-flex min-h-[44px] items-center text-sm font-medium text-primary hover:text-primary-hover transition-colors">+ Add another</button>}
           {!isEdit && (
             <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleFileDrop} onClick={() => fileInputRef.current?.click()}
               className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-text-dim"}`}>
@@ -694,8 +880,8 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
 
           {!isEdit && (
             <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg w-fit">
-              <button onClick={() => setOauthMode("connect")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${oauthMode === "connect" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Connect with provider</button>
-              <button onClick={() => setOauthMode("upload")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${oauthMode === "upload" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Paste tokens</button>
+              <button onClick={() => setOauthMode("connect")} aria-pressed={!isTokenUpload} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${oauthMode === "connect" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Connect with provider</button>
+              <button onClick={() => setOauthMode("upload")} aria-pressed={isTokenUpload} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${oauthMode === "upload" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Paste tokens</button>
             </div>
           )}
 
@@ -711,10 +897,10 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
                 />
               </FormField>
               <FormField label="Token URL"><Input placeholder="e.g. https://oauth2.googleapis.com/token" value={oauthTokenUrl} onChange={(e) => setOauthTokenUrl(e.target.value)} /></FormField>
-              <div className="flex gap-3">
-                <div className="flex-1"><FormField label="Client ID"><Input placeholder="OAuth app client ID" value={oauthClientId} onChange={(e) => setOauthClientId(e.target.value)} /></FormField></div>
-                <div className="flex-1"><FormField label="Client Secret" helperText="Optional for public clients"><Input placeholder="OAuth app client secret" value={oauthClientSecret} onChange={(e) => setOauthClientSecret(e.target.value)} type="password" /></FormField></div>
-                <div className="w-36"><FormField label="Auth Method">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex-1 min-w-0"><FormField label="Client ID"><Input placeholder="OAuth app client ID" value={oauthClientId} onChange={(e) => setOauthClientId(e.target.value)} /></FormField></div>
+                <div className="flex-1 min-w-0"><FormField label="Client Secret" helperText="Optional for public clients"><Input placeholder="OAuth app client secret" value={oauthClientSecret} onChange={(e) => setOauthClientSecret(e.target.value)} type="password" /></FormField></div>
+                <div className="w-full sm:w-36"><FormField label="Auth Method">
                   <Select value={oauthTokenAuthMethod} onChange={(e) => setOauthTokenAuthMethod(e.target.value)}>
                     <option value="none">None</option>
                     <option value="client_secret_post">POST body</option>
@@ -733,9 +919,9 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
             </>
           ) : (
             <>
-              <div className="flex gap-3">
-                <div className="flex-1"><FormField label="Access Token" helperText="Optional when refresh token is provided"><Input placeholder="Access token" value={oauthAccessToken} onChange={(e) => setOauthAccessToken(e.target.value)} type="password" /></FormField></div>
-                <div className="flex-1"><FormField label="Refresh Token" helperText="Validated immediately on save"><Input placeholder="Refresh token" value={oauthRefreshToken} onChange={(e) => setOauthRefreshToken(e.target.value)} type="password" /></FormField></div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex-1 min-w-0"><FormField label="Access Token" helperText="Optional when refresh token is provided"><Input placeholder="Access token" value={oauthAccessToken} onChange={(e) => setOauthAccessToken(e.target.value)} type="password" /></FormField></div>
+                <div className="flex-1 min-w-0"><FormField label="Refresh Token" helperText="Validated immediately on save"><Input placeholder="Refresh token" value={oauthRefreshToken} onChange={(e) => setOauthRefreshToken(e.target.value)} type="password" /></FormField></div>
               </div>
               <FormField label="Token URL" helperText="Required for refresh. Pick a provider or paste any URL.">
                 <Combobox
@@ -746,10 +932,10 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
                   onSelect={applyProvider}
                 />
               </FormField>
-              <div className="flex gap-3">
-                <div className="flex-1"><FormField label="Client ID" helperText="Required for refresh"><Input placeholder="OAuth app client ID" value={oauthClientId} onChange={(e) => setOauthClientId(e.target.value)} /></FormField></div>
-                <div className="flex-1"><FormField label="Client Secret" helperText="Optional"><Input placeholder="OAuth app client secret" value={oauthClientSecret} onChange={(e) => setOauthClientSecret(e.target.value)} type="password" /></FormField></div>
-                <div className="w-36"><FormField label="Auth Method">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex-1 min-w-0"><FormField label="Client ID" helperText="Required for refresh"><Input placeholder="OAuth app client ID" value={oauthClientId} onChange={(e) => setOauthClientId(e.target.value)} /></FormField></div>
+                <div className="flex-1 min-w-0"><FormField label="Client Secret" helperText="Optional"><Input placeholder="OAuth app client secret" value={oauthClientSecret} onChange={(e) => setOauthClientSecret(e.target.value)} type="password" /></FormField></div>
+                <div className="w-full sm:w-36"><FormField label="Auth Method">
                   <Select value={oauthTokenAuthMethod} onChange={(e) => setOauthTokenAuthMethod(e.target.value)}>
                     <option value="none">None</option>
                     <option value="client_secret_post">POST body</option>
@@ -760,8 +946,7 @@ function CredentialModal({ vaultName, editingKey, editingCred, onClose, onSaved 
             </>
           )}
         </>)}
-        {error && <ErrorBanner message={error} />}
       </div>
-    </Modal>
+    </Sheet>
   );
 }
