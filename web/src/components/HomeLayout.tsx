@@ -67,7 +67,7 @@ export default function HomeLayout() {
           {navItems.map((item) => (
             <li key={item.id}>
               <Link
-                to={item.id === "vaults" ? "/" : item.id === "users" ? "/users" : "/agents"}
+                to={item.id === "vaults" ? "/vaults" : item.id === "users" ? "/users" : "/agents"}
                 className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm no-underline transition-colors ${
                   activeTab === item.id
                     ? "bg-bg/50 font-semibold text-text"
@@ -89,7 +89,7 @@ export default function HomeLayout() {
               {navItems.map((item) => (
                 <li key={item.id}>
                   <Link
-                    to={item.id === "vaults" ? "/" : item.id === "users" ? "/users" : "/agents"}
+                    to={item.id === "vaults" ? "/vaults" : item.id === "users" ? "/users" : "/agents"}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors no-underline ${
                       activeTab === item.id
                         ? "bg-bg/50 text-text font-semibold"

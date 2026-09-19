@@ -230,9 +230,9 @@ export default function VaultLayout() {
     setIsExiting(true);
     const aside = sidebarRef.current;
     if (aside) {
-      aside.addEventListener("animationend", (e) => { if (e.target === aside) navigate({ to: "/" }); }, { once: true });
+      aside.addEventListener("animationend", (e) => { if (e.target === aside) navigate({ to: "/vaults" }); }, { once: true });
     } else {
-      navigate({ to: "/" });
+      navigate({ to: "/vaults" });
     }
   }
 
@@ -240,7 +240,7 @@ export default function VaultLayout() {
   function handleDrawerAllVaults(e: MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
     closeDrawer();
-    navigate({ to: "/" });
+    navigate({ to: "/vaults" });
   }
 
   return (
