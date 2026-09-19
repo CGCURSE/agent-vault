@@ -215,9 +215,37 @@ const homeLayoutRoute = createRoute({
   component: HomeLayout,
 });
 
+const preferredVaultName = "homelab-operations";
+
 const homeIndexRoute = createRoute({
   getParentRoute: () => homeLayoutRoute,
   path: "/",
+  beforeLoad: async () => {
+    let preferredVaultAvailable = false;
+    try {
+      const resp = await apiFetch("/v1/vaults");
+      if (resp.ok) {
+        const data: { vaults?: Array<{ name: string; membership: "explicit" | "implicit" }> } = await resp.json();
+        preferredVaultAvailable =
+          data.vaults?.some(
+            (vault) => vault.name === preferredVaultName && vault.membership === "explicit",
+          ) ?? false;
+      }
+    } catch {
+      // The vault list route renders its own recoverable network error state.
+    }
+
+    throw redirect(
+      preferredVaultAvailable
+        ? { to: "/vaults/$name/services", params: { name: preferredVaultName } }
+        : { to: "/vaults" },
+    );
+  },
+});
+
+const vaultsListRoute = createRoute({
+  getParentRoute: () => homeLayoutRoute,
+  path: "/vaults",
   component: VaultsListTab,
 });
 
@@ -287,7 +315,7 @@ const vaultLayoutRoute = createRoute({
   beforeLoad: async ({ params }) => {
     const resp = await apiFetch(`/v1/vaults/${encodeURIComponent(params.name)}/context`);
     if (!resp.ok) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: "/vaults" });
     }
     const ctx: VaultContext = await resp.json();
     return ctx;
@@ -374,6 +402,7 @@ const routeTree = rootRoute.addChildren([
   authLayoutRoute.addChildren([
     homeLayoutRoute.addChildren([
       homeIndexRoute,
+      vaultsListRoute,
       homeUsersRoute,
       homeAgentsRoute,
     ]),
