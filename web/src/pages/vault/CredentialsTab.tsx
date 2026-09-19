@@ -378,7 +378,7 @@ export default function CredentialsTab() {
     const editable = isAdmin && cred.type !== "dynamic";
     const lockReason = editLockReason(cred);
     return (
-      <article key={cred.key} className="rounded-xl border border-border bg-surface p-4">
+      <>
         <div className="flex items-start gap-2">
           <svg
             className="w-4 h-4 mt-0.5 text-text-dim flex-shrink-0"
@@ -437,7 +437,7 @@ export default function CredentialsTab() {
         ) : (
           lockReason && <p className="mt-3 text-xs text-text-dim">{lockReason}</p>
         )}
-      </article>
+      </>
     );
   }
 
@@ -584,33 +584,14 @@ export default function CredentialsTab() {
       ) : error ? (
         <ErrorBanner message={error} />
       ) : (
-        <>
-          {/* Desktop: table at md and above */}
-          <div className="hidden md:block">
-            <DataTable
-              columns={columns}
-              data={credentials}
-              rowKey={(cred) => cred.key}
-              emptyTitle={emptyTitle}
-              emptyDescription={emptyDescription}
-            />
-          </div>
-          {/* Mobile: compact stacked records below md */}
-          <div className="md:hidden space-y-3">
-            {credentials.length === 0 ? (
-              <div className="rounded-xl border border-border bg-surface py-12 text-center">
-                <div className="max-w-[360px] mx-auto">
-                  <div className="text-base font-semibold text-text-muted mb-1">
-                    {emptyTitle}
-                  </div>
-                  <div className="text-sm text-text-muted">{emptyDescription}</div>
-                </div>
-              </div>
-            ) : (
-              credentials.map(renderMobileCard)
-            )}
-          </div>
-        </>
+        <DataTable
+          columns={columns}
+          data={credentials}
+          rowKey={(cred) => cred.key}
+          renderMobileItem={renderMobileCard}
+          emptyTitle={emptyTitle}
+          emptyDescription={emptyDescription}
+        />
       )}
 
       {/* Delete confirmation modal */}
@@ -838,7 +819,7 @@ function CredentialSheet({ vaultName, editingKey, editingCred, onClose, onSaved 
     >
       <div className="space-y-4">
         {!isEdit && (
-          <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg w-fit">
+          <div className="flex w-full flex-wrap gap-1 rounded-lg bg-bg-secondary p-1 sm:w-fit">
             <button onClick={() => setCredType("static")} aria-pressed={credType === "static"} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${credType === "static" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Static</button>
             <button onClick={() => setCredType("oauth")} aria-pressed={credType === "oauth"} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${credType === "oauth" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>OAuth</button>
           </div>
@@ -879,7 +860,7 @@ function CredentialSheet({ vaultName, editingKey, editingCred, onClose, onSaved 
           <FormField label="Credential Key"><Input placeholder="e.g. GOOGLE, GITHUB" value={oauthKey} onChange={(e) => setOauthKey(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))} readOnly={isEdit} autoFocus={!isEdit} /></FormField>
 
           {!isEdit && (
-            <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg w-fit">
+            <div className="flex w-full flex-wrap gap-1 rounded-lg bg-bg-secondary p-1 sm:w-fit">
               <button onClick={() => setOauthMode("connect")} aria-pressed={!isTokenUpload} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${oauthMode === "connect" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Connect with provider</button>
               <button onClick={() => setOauthMode("upload")} aria-pressed={isTokenUpload} className={`min-h-[44px] px-4 rounded-md text-sm font-medium transition-colors ${oauthMode === "upload" ? "bg-bg text-text shadow-sm" : "text-text-dim hover:text-text"}`}>Paste tokens</button>
             </div>

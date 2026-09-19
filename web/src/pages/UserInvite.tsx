@@ -35,7 +35,7 @@ export default function UserInvite() {
             invite?.error_title === "Already Accepted" ? (
               <AlreadyAccepted />
             ) : (
-              <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+              <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
                 <ErrorSection
                   title={invite?.error_title ?? "Invite Unavailable"}
                   message={invite?.error_message ?? "This invite link is no longer valid. Please ask for a new invitation."}
@@ -43,7 +43,7 @@ export default function UserInvite() {
               </div>
             )
           ) : (
-            <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+            <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
               {invite.needs_account ? (
                 <NewUserForm
                   token={invite.token!}
@@ -70,7 +70,7 @@ export default function UserInvite() {
 function AlreadyAccepted() {
   return (
     <>
-      <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+      <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
             <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -60,12 +60,31 @@ export default function HomeLayout() {
   const activeTab: HomeTab = location.pathname === "/users" ? "users" : location.pathname === "/agents" ? "agents" : "vaults";
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-bg">
+    <div className="flex min-h-dvh w-full flex-col bg-bg">
       <Navbar email={auth.email} isOwner={auth.is_owner} />
-      <div className="flex flex-1">
+      <nav aria-label="Primary" className="border-b border-border bg-surface px-2 py-2 md:hidden">
+        <ul className="grid grid-cols-3 gap-1">
+          {navItems.map((item) => (
+            <li key={item.id}>
+              <Link
+                to={item.id === "vaults" ? "/" : item.id === "users" ? "/users" : "/agents"}
+                className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm no-underline transition-colors ${
+                  activeTab === item.id
+                    ? "bg-bg/50 font-semibold text-text"
+                    : "text-text-muted hover:bg-bg/50 hover:text-text"
+                }`}
+              >
+                <span className={activeTab === item.id ? "text-text" : "text-text-dim"}>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <div className="flex min-h-0 flex-1">
         {/* Sidebar */}
-        <aside className="w-[220px] flex-shrink-0 border-r border-border bg-surface flex flex-col animate-sidebar-in">
-          <nav className="flex-1 px-3 pt-5 pb-4">
+        <aside className="hidden w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface animate-sidebar-in md:flex">
+          <nav className="flex-1 px-3 pb-4 pt-5">
             <ul className="space-y-0.5">
               {navItems.map((item) => (
                 <li key={item.id}>

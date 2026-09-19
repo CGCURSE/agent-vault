@@ -13,7 +13,7 @@ export default function SegmentedTabs<T extends string>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="inline-flex flex-wrap gap-1 p-1 bg-bg border border-border rounded-lg"
+      className="flex w-full flex-wrap gap-1 rounded-lg border border-border bg-bg p-1 sm:inline-flex sm:w-auto"
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -24,10 +24,10 @@ export default function SegmentedTabs<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(opt.value)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors sm:flex-none ${
               active
-                ? "bg-surface-raised text-text border border-border"
-                : "text-text-muted hover:text-text border border-transparent"
+                ? "border-border bg-surface-raised text-text"
+                : "border-transparent text-text-muted hover:text-text"
             }`}
           >
             {opt.label}

@@ -302,14 +302,14 @@ export default function InstanceSettingsTab() {
 
   if (loading) {
     return (
-      <div className="p-8 w-full max-w-[960px]">
+      <div className="w-full max-w-[960px] p-4 sm:p-8">
         <p className="text-sm text-text-muted">Loading settings...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
       <div className="mb-6">
         <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
           Instance Settings
@@ -321,7 +321,7 @@ export default function InstanceSettingsTab() {
 
       <section className="mb-8">
         <div className="border border-border rounded-xl bg-surface p-5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-sm font-semibold text-text mb-1">
                 Invite-Only Registration
@@ -335,16 +335,22 @@ export default function InstanceSettingsTab() {
               type="button"
               role="switch"
               aria-checked={inviteOnly}
+              aria-label="Invite-only registration"
               onClick={() => { setInviteOnly(!inviteOnly); setSuccess(""); }}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                inviteOnly ? "bg-primary" : "bg-border"
-              }`}
+              className="relative inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  inviteOnly ? "translate-x-5" : "translate-x-0"
+                aria-hidden="true"
+                className={`relative inline-flex h-6 w-11 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                  inviteOnly ? "bg-primary" : "bg-border"
                 }`}
-              />
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    inviteOnly ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </span>
             </button>
           </div>
         </div>
@@ -361,7 +367,7 @@ export default function InstanceSettingsTab() {
             to allow all domains.
           </p>
 
-          <form onSubmit={addDomain} className="flex gap-2 mb-4 max-w-md">
+          <form onSubmit={addDomain} className="mb-4 flex max-w-md flex-col gap-2 sm:flex-row">
             <div className="flex-1">
               <Input
                 placeholder="example.com"
@@ -382,13 +388,13 @@ export default function InstanceSettingsTab() {
               {domains.map((domain) => (
                 <span
                   key={domain}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg border border-border rounded-lg text-sm text-text"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-bg py-1.5 pl-3 text-sm text-text"
                 >
                   @{domain}
                   <button
                     type="button"
                     onClick={() => removeDomain(domain)}
-                    className="text-text-dim hover:text-danger transition-colors"
+                    className="inline-flex h-11 w-11 items-center justify-center text-text-dim transition-colors hover:text-danger"
                     aria-label={`Remove ${domain}`}
                   >
                     <svg
@@ -449,11 +455,11 @@ export default function InstanceSettingsTab() {
               )}
             </p>
 
-            <div className="flex items-center gap-3 mb-4">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <label className="text-sm text-text-muted" htmlFor="rl-profile">Profile</label>
               <select
                 id="rl-profile"
-                className="h-9 px-3 rounded-lg border border-border bg-bg text-sm text-text disabled:opacity-60"
+                className="h-11 rounded-lg border border-border bg-bg px-3 text-base text-text disabled:opacity-60 sm:text-sm"
                 value={rlProfile}
                 disabled={rateLimit.locked}
                 onChange={(e) => { setRlProfile(e.target.value); setRlSuccess(""); }}
@@ -468,14 +474,14 @@ export default function InstanceSettingsTab() {
             <button
               type="button"
               onClick={() => setRlAdvanced((v) => !v)}
-              className="text-xs text-text-muted hover:text-text underline decoration-dotted underline-offset-2 mb-3"
+              className="mb-3 min-h-11 text-left text-xs text-text-muted underline decoration-dotted underline-offset-2 hover:text-text"
             >
               {rlAdvanced ? "Hide advanced" : "Show advanced (per-tier overrides)"}
             </button>
 
             {rlAdvanced && (
-              <div className="border border-border rounded-lg mb-4">
-                <table className="w-full text-sm">
+              <div className="mb-4 overflow-x-auto rounded-lg border border-border">
+                <table className="min-w-[760px] text-sm">
                   <thead className="bg-bg text-text-muted">
                     <tr>
                       <th className="text-left px-3 py-2 font-medium">Tier</th>
@@ -568,7 +574,7 @@ export default function InstanceSettingsTab() {
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button onClick={handleSaveRateLimit} loading={rlSaving} disabled={rateLimit.locked}>
                 Save Rate Limits
               </Button>

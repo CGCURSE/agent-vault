@@ -26,7 +26,7 @@ export default function ProposalApprove() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="flex flex-col items-center w-full">
           {!approval || approval.error ? (
-            <div className="bg-surface rounded-2xl w-full max-w-[560px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+            <div className="w-full max-w-[560px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
               <ErrorSection
                 title={approval?.error_title ?? "Unavailable"}
                 message={approval?.error_message ?? "This approval link is no longer valid."}
@@ -61,7 +61,7 @@ function ErrorSection({ title, message }: { title: string; message: string }) {
 
 function UnauthenticatedView({ data }: { data: ApprovalData }) {
   return (
-    <div className="bg-surface rounded-2xl w-full max-w-[560px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+    <div className="w-full max-w-[560px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
       <ProposalPreview data={data} />
 
       <div className="border-t border-border mt-6 pt-6">
@@ -357,7 +357,7 @@ function ApprovalForm({ data }: { data: ApprovalData }) {
 
   if (view === "success") {
     return (
-      <div className="bg-surface rounded-2xl w-full max-w-[560px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+      <div className="w-full max-w-[560px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mb-6">
             <svg className="w-8 h-8 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -376,7 +376,7 @@ function ApprovalForm({ data }: { data: ApprovalData }) {
 
   if (view === "rejected") {
     return (
-      <div className="bg-surface rounded-2xl w-full max-w-[560px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+      <div className="w-full max-w-[560px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
         <div className="flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-2xl bg-text-muted/10 flex items-center justify-center mb-6">
             <svg className="w-8 h-8 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -395,7 +395,7 @@ function ApprovalForm({ data }: { data: ApprovalData }) {
   }
 
   return (
-    <div className="bg-surface rounded-2xl w-full max-w-[560px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+    <div className="w-full max-w-[560px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
       <ProposalPreview data={data} />
 
       <form onSubmit={handleApprove} className="mt-6 border-t border-border pt-6">
@@ -431,7 +431,7 @@ function ApprovalForm({ data }: { data: ApprovalData }) {
                         {cred.obtain_instructions && (
                           <p className="text-sm text-text-muted">{cred.obtain_instructions}</p>
                         )}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {!cred.oauth?.authorization_url && (
                             <FormField label="Authorization URL" helperText="Leave empty for token upload">
                               <Input

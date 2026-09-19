@@ -33,13 +33,18 @@ export default function InstanceLayout() {
   ];
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-bg">
+    <div className="flex min-h-dvh w-full flex-col bg-bg">
       <Navbar email={auth.email} isOwner={auth.is_owner} />
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="flex min-h-11 items-center gap-2 border-b border-border bg-surface px-4 text-sm md:hidden">
+          <Link to="/" className="-ml-2 inline-flex min-h-11 items-center px-2 text-text-muted no-underline hover:text-text">Home</Link>
+          <span className="text-text-dim">/</span>
+          <span className="font-medium text-text">Instance settings</span>
+        </div>
         {/* Sidebar */}
         <aside
           ref={sidebarRef}
-          className={`w-[220px] flex-shrink-0 border-r border-border bg-surface flex flex-col ${isExiting ? "animate-sidebar-out" : "animate-sidebar-in"}`}
+          className={`hidden w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface md:flex ${isExiting ? "animate-sidebar-out" : "animate-sidebar-in"}`}
         >
           <div className="px-4 pt-5 pb-3">
             <a

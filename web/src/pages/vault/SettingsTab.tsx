@@ -84,7 +84,7 @@ export default function SettingsTab() {
   }
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
       <div className="mb-6">
         <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
           Settings
@@ -184,8 +184,8 @@ function CredentialStoreDisplay({ store }: { store?: CredentialStoreInfo }) {
   return (
     <>
       <div className="border-t border-border mx-5" />
-      <div className="p-5 grid grid-cols-2 gap-x-6 gap-y-4">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-4 p-5 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <StoreField
             label="Credential store"
             tooltip="Built-in keeps credentials in Agent Vault. Infisical syncs read-only from your Infisical instance, overwriting the built-in credentials."

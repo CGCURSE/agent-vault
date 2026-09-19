@@ -17,14 +17,14 @@ export default function Register() {
       <Navbar />
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="flex flex-col items-center w-full">
-          <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+          <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
             {isInviteOnly ? <InviteOnlyNotice /> : <RegisterForm isFirstUser={isFirstUser} onStepChange={(step) => setShowLoginLink(step === "register")} />}
           </div>
 
           {!isFirstUser && showLoginLink && (
             <p className="text-sm text-text-muted mt-6 text-center">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary font-medium hover:underline">
+              <Link to="/login" className="inline-flex min-h-11 items-center px-2 font-medium text-primary hover:underline">
                 Log in
               </Link>
             </p>
@@ -139,7 +139,7 @@ function InstallCLI({ isAuthenticated }: { isAuthenticated: boolean }) {
 
       <button
         onClick={handleContinue}
-        className="text-sm text-text-muted hover:text-text mt-4 bg-transparent border-none cursor-pointer p-0 transition-colors"
+        className="mt-4 inline-flex min-h-11 items-center border-none bg-transparent px-2 text-sm text-text-muted transition-colors hover:text-text"
       >
         Skip for now
       </button>
@@ -347,7 +347,7 @@ function RegisterForm({ isFirstUser, onStepChange }: { isFirstUser: boolean; onS
               <button
                 type="button"
                 onClick={handleResend}
-                className="text-primary font-medium hover:underline bg-transparent border-none cursor-pointer p-0 text-sm"
+                className="inline-flex min-h-11 items-center border-none bg-transparent px-2 text-sm font-medium text-primary hover:underline"
               >
                 Resend code
               </button>
