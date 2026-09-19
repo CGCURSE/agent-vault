@@ -133,7 +133,14 @@ export default function Sheet({
     // Children may focus a field on mount; only take focus when nothing
     // inside the sheet already has it.
     if (panel && !panel.contains(document.activeElement)) {
-      panel.focus();
+      const first = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).find(
+        (el) =>
+          el.getClientRects().length > 0 &&
+          getComputedStyle(el).visibility !== "hidden"
+      );
+      (first ?? panel).focus();
     }
     return () => {
       const opener = openerRef.current;

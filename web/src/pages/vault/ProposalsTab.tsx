@@ -115,7 +115,7 @@ export default function ProposalsTab() {
   ];
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
       <div className="mb-6">
         <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
           Proposals
@@ -137,7 +137,7 @@ export default function ProposalsTab() {
       <div className="flex mb-6 border border-border rounded-lg overflow-hidden w-fit">
         <button
           onClick={() => setFilter("pending")}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+          className={`min-h-11 px-5 py-2.5 text-sm font-medium transition-colors ${
             filter === "pending"
               ? "bg-surface text-text"
               : "bg-bg text-text-muted hover:text-text"
@@ -152,7 +152,7 @@ export default function ProposalsTab() {
         </button>
         <button
           onClick={() => setFilter("all")}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors border-l border-border ${
+          className={`min-h-11 px-5 py-2.5 text-sm font-medium transition-colors border-l border-border ${
             filter === "all"
               ? "bg-surface text-text"
               : "bg-bg text-text-muted hover:text-text"
@@ -181,7 +181,7 @@ export default function ProposalsTab() {
                   href="https://docs.agent-vault.dev/first-proposal"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 text-sm font-medium text-text border border-border rounded-lg hover:bg-bg transition-colors"
+                  className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-bg"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                   Read the docs
@@ -418,7 +418,7 @@ function ProposalModal({
                             <p><span className="text-text-muted">Token URL:</span> {cred.oauth?.token_url}</p>
                             {cred.oauth?.scopes && <p><span className="text-text-muted">Scopes:</span> {cred.oauth.scopes}</p>}
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <FormField label="Client ID"><Input placeholder="OAuth app client ID" value={fields.client_id ?? ""} onChange={(e) => updateOauthField(cred.key, "client_id", e.target.value)} /></FormField>
                             <FormField label="Client Secret"><Input type="password" placeholder="OAuth app client secret" value={fields.client_secret ?? ""} onChange={(e) => updateOauthField(cred.key, "client_secret", e.target.value)} /></FormField>
                           </div>

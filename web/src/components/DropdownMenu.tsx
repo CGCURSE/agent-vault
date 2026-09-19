@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 export interface DropdownMenuItem {
@@ -17,10 +17,25 @@ export default function DropdownMenu({ items, width = 128 }: DropdownMenuProps) 
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0, width });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
+    function positionMenu() {
+      const button = btnRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const menuWidth = Math.min(width, Math.max(0, window.innerWidth - 16));
+      const estimatedHeight = items.length * 44 + 8;
+      const top = rect.bottom + 4 + estimatedHeight <= window.innerHeight
+        ? rect.bottom + 4
+        : Math.max(8, rect.top - estimatedHeight - 4);
+      const left = Math.min(
+        Math.max(8, rect.right - menuWidth),
+        Math.max(8, window.innerWidth - menuWidth - 8),
+      );
+      setPos({ top, left, width: menuWidth });
+    }
     function handleClick(e: MouseEvent) {
       if (
         menuRef.current &&
@@ -31,16 +46,27 @@ export default function DropdownMenu({ items, width = 128 }: DropdownMenuProps) 
         setOpen(false);
       }
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        btnRef.current?.focus();
+      }
+    }
+    positionMenu();
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+    document.addEventListener("keydown", handleKey);
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
+    };
+  }, [items.length, open, width]);
 
   function toggle() {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 4, left: rect.right - width });
-    }
-    setOpen((v) => !v);
+    setOpen((value) => !value);
   }
 
   if (items.length === 0) return null;
@@ -49,10 +75,14 @@ export default function DropdownMenu({ items, width = 128 }: DropdownMenuProps) 
     <>
       <button
         ref={btnRef}
+        type="button"
         onClick={toggle}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-text-dim hover:text-text hover:bg-bg transition-colors"
+        aria-label="Open actions"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex h-11 w-11 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-bg hover:text-text"
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <circle cx="12" cy="5" r="1.5" />
           <circle cx="12" cy="12" r="1.5" />
           <circle cx="12" cy="19" r="1.5" />
@@ -62,17 +92,20 @@ export default function DropdownMenu({ items, width = 128 }: DropdownMenuProps) 
         createPortal(
           <div
             ref={menuRef}
-            className="fixed z-50 bg-surface border border-border rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] py-1"
-            style={{ top: pos.top, left: pos.left, width }}
+            role="menu"
+            className="fixed z-50 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
           >
             {items.map((item) => (
               <button
                 key={item.label}
+                type="button"
+                role="menuitem"
                 onClick={async () => {
                   setOpen(false);
                   await item.onClick();
                 }}
-                className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                className={`min-h-11 w-full px-4 py-2.5 text-left text-sm transition-colors ${
                   item.variant === "danger"
                     ? "text-danger hover:bg-danger-bg"
                     : "text-text hover:bg-bg"

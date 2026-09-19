@@ -25,14 +25,14 @@ export default function Login() {
       <Navbar />
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="flex flex-col items-center w-full">
-          <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+          <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
             <LoginForm />
           </div>
 
           {!inviteOnly && (
             <p className="text-sm text-text-muted mt-6 text-center">
               Don't have an account?{" "}
-              <Link to="/register" className="text-primary font-medium hover:underline">
+              <Link to="/register" className="inline-flex min-h-11 items-center px-2 font-medium text-primary hover:underline">
                 Register
               </Link>
             </p>
@@ -128,7 +128,7 @@ function LoginForm() {
             />
           </FormField>
           <div className="text-right mt-2">
-            <Link to="/forgot-password" className="text-sm text-primary font-medium hover:underline">
+            <Link to="/forgot-password" className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-primary hover:underline">
               Forgot password?
             </Link>
           </div>

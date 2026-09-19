@@ -177,8 +177,8 @@ export default function UsersTab() {
   }
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
+      <div className="mb-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
             Users

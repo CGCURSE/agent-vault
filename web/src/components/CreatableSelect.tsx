@@ -120,7 +120,7 @@ export default function CreatableSelect({ values, onChange, options = [], placeh
                   type="button"
                   tabIndex={-1}
                   onClick={(e) => { e.stopPropagation(); removeValue(v); }}
-                  className="flex-shrink-0 text-text-dim hover:text-text transition-colors"
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-text-dim transition-colors hover:text-text"
                 >
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
@@ -135,7 +135,7 @@ export default function CreatableSelect({ values, onChange, options = [], placeh
             onFocus={show}
             onKeyDown={handleKeyDown}
             autoComplete="off"
-            className="flex-1 min-w-[80px] bg-transparent outline-none text-text text-sm py-1"
+            className="min-w-[80px] flex-1 bg-transparent py-1 text-base text-text outline-none sm:text-sm"
           />
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 self-start mt-2">
@@ -145,7 +145,7 @@ export default function CreatableSelect({ values, onChange, options = [], placeh
               tabIndex={-1}
               aria-label="Clear all"
               onMouseDown={(e) => { e.preventDefault(); onChange([]); setQuery(""); }}
-              className="text-text-dim hover:text-text transition-colors"
+              className="flex h-6 w-6 items-center justify-center text-text-dim transition-colors hover:text-text"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
@@ -158,7 +158,7 @@ export default function CreatableSelect({ values, onChange, options = [], placeh
               e.preventDefault();
               if (open) { setOpen(false); } else { inputRef.current?.focus(); show(); }
             }}
-            className="w-4 h-4 text-text-muted hover:text-text transition-colors"
+            className="flex h-6 w-6 items-center justify-center text-text-muted transition-colors hover:text-text"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9" />
@@ -181,7 +181,7 @@ export default function CreatableSelect({ values, onChange, options = [], placeh
                     type="button"
                     onMouseDown={(e) => { e.preventDefault(); addValue(item.createValue!); }}
                     onMouseEnter={() => setHighlighted(i)}
-                    className={`w-full text-left px-4 py-2.5 transition-colors border-t border-border ${i === highlighted ? "bg-bg" : ""}`}
+                    className={`min-h-11 w-full border-t border-border px-4 py-2.5 text-left transition-colors ${i === highlighted ? "bg-bg" : ""}`}
                   >
                     <span className="text-sm text-primary">Add "{item.createValue}"</span>
                   </button>
@@ -195,7 +195,7 @@ export default function CreatableSelect({ values, onChange, options = [], placeh
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); toggleOption(opt.value); }}
                   onMouseEnter={() => setHighlighted(i)}
-                  className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between ${i === highlighted ? "bg-bg" : ""}`}
+                  className={`flex min-h-11 w-full items-center justify-between px-4 py-2.5 text-left transition-colors ${i === highlighted ? "bg-bg" : ""}`}
                 >
                   <div className="min-w-0">
                     <span className="block text-sm text-text truncate">{opt.label || opt.value}</span>

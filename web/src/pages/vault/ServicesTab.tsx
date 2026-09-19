@@ -279,8 +279,8 @@ export default function ServicesTab() {
   ];
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
+      <div className="mb-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
             Services
@@ -312,10 +312,10 @@ export default function ServicesTab() {
         <div className="mb-6 rounded-lg border border-warning/20 bg-warning-bg">
           <button
             type="button"
-            className="flex w-full items-center justify-between px-4 py-3 text-left"
+            className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left"
             onClick={() => setDiscoveredCollapsed((c) => !c)}
           >
-            <span className="flex items-center gap-2 text-sm font-medium text-warning">
+            <span className="flex min-w-0 items-start gap-2 text-sm font-medium text-warning">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v3M8 10h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
               {discoveredTotal} {discoveredTotal === 1 ? "host" : "hosts"} detected in recent traffic
             </span>
@@ -329,17 +329,17 @@ export default function ServicesTab() {
           {!discoveredCollapsed && (
             <div className="border-t border-info/20 px-4 pb-3">
               {discoveredHosts.map((dh) => (
-                <div key={dh.host} className="flex items-center justify-between py-2.5 border-b border-border last:border-b-0">
-                  <div>
-                    <div className="font-mono text-sm text-text">{dh.host}</div>
-                    <div className="text-xs text-text-muted mt-0.5">
+                <div key={dh.host} className="flex flex-col items-stretch gap-3 border-b border-border py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="break-all font-mono text-sm text-text">{dh.host}</div>
+                    <div className="mt-0.5 text-xs text-text-muted">
                       {dh.request_count} {dh.request_count === 1 ? "request" : "requests"} &middot; {timeAgo(dh.last_seen)}
                     </div>
                   </div>
                   {isAdmin && (
                     <button
                       type="button"
-                      className="rounded border border-border bg-surface px-2.5 py-1 text-xs text-text-muted hover:bg-surface-hover hover:text-text transition-colors"
+                      className="min-h-11 rounded border border-border bg-surface px-3 py-2 text-xs text-text-muted transition-colors hover:bg-surface-hover hover:text-text"
                       onClick={() => {
                         setAddWithHost({ host: dh.host, authScheme: dh.auth_scheme, authHeader: dh.auth_header });
                         setEditingIndex(-1);
@@ -353,7 +353,7 @@ export default function ServicesTab() {
               {discoveredTotal > 5 && !discoveredExpanded && (
                 <button
                   type="button"
-                  className="mt-2 text-xs text-warning hover:text-warning/80"
+                  className="mt-2 min-h-11 text-xs text-warning hover:text-warning/80"
                   onClick={() => {
                     setDiscoveredExpanded(true);
                     fetchDiscoveredHosts(100);
@@ -836,7 +836,7 @@ function ServiceModal({
             >
               <div className="space-y-3">
                 {customHeaders.map((header, i) => (
-                  <div key={header._id} className="flex gap-3 items-center">
+                  <div key={header._id} className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <Input
                       placeholder="Header name"
                       value={header.name}
@@ -872,7 +872,7 @@ function ServiceModal({
                   onClick={() =>
                     setCustomHeaders((prev) => [...prev, { _id: nextRowId(), name: "", value: "" }])
                   }
-                  className="text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+                  className="inline-flex min-h-11 items-center text-sm font-medium text-primary transition-colors hover:text-primary-hover"
                 >
                   + Add another
                 </button>
@@ -1080,7 +1080,7 @@ function IconButton({ onClick, ariaLabel }: { onClick: () => void; ariaLabel: st
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg text-text-dim hover:text-danger hover:bg-danger-bg transition-colors"
+      className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-danger-bg hover:text-danger"
     >
       <svg
         className="w-4 h-4"
@@ -1131,14 +1131,14 @@ function PresetPicker({
   const triggerLabel = selectedTpl ? selectedTpl.name : "Preset…";
 
   return (
-    <div className="flex items-center gap-3 text-sm text-text-muted">
-      <span>Start from</span>
-      <div className="relative">
+    <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm text-text-muted">
+      <span className="flex-shrink-0">Start from</span>
+      <div className="relative min-w-0 w-full sm:w-auto">
         <button
           ref={triggerRef}
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-bg border border-border text-text text-sm font-medium hover:bg-surface-hover transition-colors"
+          className="inline-flex min-h-11 w-full max-w-full items-center justify-between gap-1.5 rounded-md border border-border bg-bg px-3 text-sm font-medium text-text transition-colors hover:bg-surface-hover sm:w-auto sm:justify-start"
         >
           <svg
             className="w-3.5 h-3.5 text-primary"
@@ -1147,7 +1147,7 @@ function PresetPicker({
           >
             <path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5L12 2z" />
           </svg>
-          {triggerLabel}
+          <span className="truncate">{triggerLabel}</span>
           <svg
             className={`w-3.5 h-3.5 text-text-muted transition-transform ${open ? "rotate-180" : ""}`}
             viewBox="0 0 24 24"
@@ -1163,7 +1163,7 @@ function PresetPicker({
         {open && (
           <div
             ref={popoverRef}
-            className="absolute left-0 top-full mt-2 w-[320px] max-h-[320px] overflow-y-auto bg-surface border border-border rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.3)] py-1 z-10"
+            className="absolute right-0 top-full z-10 mt-2 max-h-[320px] w-[calc(100vw-2rem)] max-w-[320px] overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
           >
             <button
               type="button"
@@ -1171,7 +1171,7 @@ function PresetPicker({
                 onSelect("");
                 setOpen(false);
               }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-bg transition-colors ${
+              className={`min-h-11 w-full px-3 py-2 text-left text-sm transition-colors hover:bg-bg ${
                 selected === "" ? "text-text" : "text-text-muted"
               }`}
             >
@@ -1185,7 +1185,7 @@ function PresetPicker({
                   onSelect(tpl.id);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                className={`min-h-11 w-full px-3 py-2 text-left text-sm transition-colors ${
                   selected === tpl.id ? "bg-bg" : "hover:bg-bg"
                 }`}
               >

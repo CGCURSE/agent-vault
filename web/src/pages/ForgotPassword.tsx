@@ -13,13 +13,13 @@ export default function ForgotPassword() {
       <Navbar />
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="flex flex-col items-center w-full">
-          <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+          <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
             <ForgotPasswordForm />
           </div>
 
           <p className="text-sm text-text-muted mt-6 text-center">
             Remember your password?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
+            <Link to="/login" className="inline-flex min-h-11 items-center px-2 font-medium text-primary hover:underline">
               Log in
             </Link>
           </p>

@@ -96,9 +96,9 @@ export default function VaultsListTab() {
   const otherVaults = useMemo(() => filtered.filter((v) => v.membership === "implicit"), [filtered]);
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">
             Vaults
@@ -295,8 +295,8 @@ function VaultCard({
           {canLeave && (
             <button
               onClick={handleLeave}
-              className="p-1 rounded text-text-dim hover:text-danger transition-colors"
-              title="Leave vault"
+              className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-bg hover:text-danger"
+              aria-label={`Leave ${vault.name}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -308,8 +308,8 @@ function VaultCard({
           {canDelete && (
             <button
               onClick={handleDelete}
-              className="p-1 rounded text-text-dim hover:text-danger transition-colors"
-              title="Delete vault"
+              className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-bg hover:text-danger"
+              aria-label={`Delete ${vault.name}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" />

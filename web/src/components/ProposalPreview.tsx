@@ -139,11 +139,11 @@ function SubstitutionsDisplay({ subs }: { subs: Substitution[] }) {
       {subs.map((sub, i) => {
         const surfaces = sub.in && sub.in.length > 0 ? sub.in : DEFAULT_SUBSTITUTION_SURFACES;
         return (
-          <div key={i} className="flex items-start gap-1.5 text-xs font-mono leading-relaxed">
-            <span className="text-text break-all">{sub.placeholder}</span>
+          <div key={i} className="flex flex-wrap items-start gap-x-1.5 text-xs font-mono leading-relaxed">
+            <span className="break-all text-text">{sub.placeholder}</span>
             <span className="text-text-muted">→</span>
-            <span className="text-text break-all">{sub.key}</span>
-            <span className="text-text-muted">in: [{surfaces.join(", ")}]</span>
+            <span className="break-all text-text">{sub.key}</span>
+            <span className="break-words text-text-muted">in: [{surfaces.join(", ")}]</span>
           </div>
         );
       })}
@@ -180,25 +180,25 @@ export default function ProposalPreview({ data }: { data: ProposalData }) {
             <polyline points="9 12 12 15 16 10" />
           </svg>
         </div>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold text-text leading-tight">
             {titleParts.length > 0
               ? (setServices.length > 0 ? "Connect to " : "") + titleParts.join(" & ")
               : "Service change"}
           </h1>
           {(data.vault || data.agent_name) && (
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-text-muted">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
               {data.vault && (
                 <span className="inline-flex items-center gap-1">
                   <span className="font-medium">Vault:</span>
-                  <span className="font-mono">{data.vault}</span>
+                  <span className="break-all font-mono">{data.vault}</span>
                 </span>
               )}
               {data.vault && data.agent_name && <span>&middot;</span>}
               {data.agent_name && (
                 <span className="inline-flex items-center gap-1">
                   <span className="font-medium">Agent:</span>
-                  <span className="font-mono">{data.agent_name}</span>
+                  <span className="break-all font-mono">{data.agent_name}</span>
                 </span>
               )}
             </div>
@@ -234,7 +234,7 @@ export default function ProposalPreview({ data }: { data: ProposalData }) {
                   <div className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
                     Host
                   </div>
-                  <span className="text-sm text-text font-mono">{service.host}</span>
+                  <span className="break-all font-mono text-sm text-text">{service.host}</span>
                 </div>
                 {service.enabled !== undefined && (
                   <div className="mt-2 pt-2 border-t border-border">

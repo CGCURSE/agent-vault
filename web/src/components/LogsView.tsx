@@ -199,7 +199,7 @@ export default function LogsView({
   ];
 
   return (
-    <div className="p-8 w-full max-w-[960px]">
+    <div className="w-full max-w-[960px] p-4 sm:p-8">
       <div className="mb-6">
         <h2 className="text-[22px] font-semibold text-text tracking-tight mb-1">{title}</h2>
         <p className="text-sm text-text-muted">{description}</p>
@@ -218,7 +218,7 @@ export default function LogsView({
         {pollMs > 0 && (
           <button
             onClick={() => setPaused((p) => !p)}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-muted border border-border rounded-md hover:bg-bg transition-colors"
+            className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-text-muted transition-colors hover:bg-bg"
             title={paused ? "Resume live updates" : "Pause live updates"}
           >
             <span
@@ -267,11 +267,11 @@ export default function LogsView({
 
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] font-semibold text-text-dim uppercase tracking-wider">
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-text-dim">
         {label}
       </span>
-      <div className="flex border border-border rounded-lg overflow-hidden">{children}</div>
+      <div className="flex min-w-0 overflow-hidden rounded-lg border border-border">{children}</div>
     </div>
   );
 }
@@ -287,8 +287,9 @@ function FilterPill({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border first:border-l-0 ${
+      className={`min-h-11 min-w-11 border-l border-border px-3 py-2 text-xs font-medium transition-colors first:border-l-0 ${
         active ? "bg-surface text-text" : "bg-bg text-text-muted hover:text-text"
       }`}
     >

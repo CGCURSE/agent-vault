@@ -11,7 +11,7 @@ export default function OAuthComplete() {
     <div className="min-h-screen w-full flex flex-col bg-bg">
       <Navbar />
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="bg-surface rounded-2xl w-full max-w-[480px] p-10 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)]">
+        <div className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.04)] sm:p-10">
           <div className="flex flex-col items-center text-center">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${
               isSuccess ? "bg-success/10" : "bg-danger/10"
