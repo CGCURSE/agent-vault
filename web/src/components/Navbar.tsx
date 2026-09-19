@@ -29,7 +29,7 @@ export default function Navbar({ email, vaultName, isOwner, onOpenNavigation }: 
             </svg>
           </button>
         )}
-        <Link to="/" className="inline-flex min-h-11 min-w-0 flex-shrink items-center truncate font-sans text-base font-semibold tracking-tight text-text no-underline hover:text-text">
+        <Link to="/" className="inline-flex min-h-11 min-w-0 shrink items-center truncate font-sans text-base font-semibold tracking-tight text-text no-underline hover:text-text">
           Agent Vault
         </Link>
 

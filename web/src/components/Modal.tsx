@@ -107,7 +107,14 @@ export default function Modal({ open, onClose, title, description, children, foo
     if (!open) return;
     const panel = panelRef.current;
     if (panel && !panel.contains(document.activeElement)) {
-      panel.focus();
+      const first = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ).find(
+        (element) =>
+          element.getClientRects().length > 0 &&
+          getComputedStyle(element).visibility !== "hidden",
+      );
+      (first ?? panel).focus();
     }
     return () => {
       const opener = openerRef.current;
