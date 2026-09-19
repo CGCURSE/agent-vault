@@ -5,25 +5,45 @@ interface NavbarProps {
   email?: string;
   vaultName?: string;
   isOwner?: boolean;
+  /** Renders a mobile navigation menu button when provided. */
+  onOpenNavigation?: () => void;
 }
 
-export default function Navbar({ email, vaultName, isOwner }: NavbarProps) {
+
+export default function Navbar({ email, vaultName, isOwner, onOpenNavigation }: NavbarProps) {
+
   return (
     <nav className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border">
-      <div className="flex items-center gap-2">
-        <Link to="/" className="font-sans text-base font-semibold text-text tracking-tight hover:text-text no-underline">
+      <div className="flex items-center gap-2 min-w-0">
+        {onOpenNavigation && (
+          <button
+            type="button"
+            onClick={onOpenNavigation}
+            aria-label="Open navigation menu"
+            className="lg:hidden -ml-2 w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-lg text-text-muted hover:text-text hover:bg-bg transition-colors"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
+        <Link to="/" className="flex-shrink-0 font-sans text-base font-semibold text-text tracking-tight hover:text-text no-underline">
           Agent Vault
         </Link>
+
         {vaultName && (
           <>
             <span className="text-text-dim text-base">/</span>
-            <span className="font-sans text-base font-semibold text-text tracking-tight">
+            <span className="min-w-0 truncate font-sans text-base font-semibold text-text tracking-tight">
               {vaultName}
             </span>
+
           </>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-shrink-0">
         <div className="relative group">
           <a href="https://docs.agent-vault.dev" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:bg-bg transition-colors">
             <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
