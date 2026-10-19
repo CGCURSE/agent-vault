@@ -38,6 +38,10 @@ type InjectResult struct {
 	// Nil for passthrough services.
 	Headers map[string]string
 
+	// oauthTokens carries the resolved OAuth values for rejected-token recovery.
+	// These are SECRET values and must never be logged.
+	oauthTokens map[string]string
+
 	// MatchedName/Host/Path/Port describe the matched service. Safe to log.
 	// Empty under unmatched-host passthrough.
 	MatchedName string
@@ -64,6 +68,12 @@ type InjectResult struct {
 // path only — no query, no fragment.
 type CredentialProvider interface {
 	Inject(ctx context.Context, vaultID, targetHost string, targetPort int, targetPath string) (*InjectResult, error)
+}
+
+// UnauthorizedCredentialProvider can recover an OAuth injection rejected by an upstream.
+// A nil result means the injection has no refreshable OAuth credential.
+type UnauthorizedCredentialProvider interface {
+	RefreshAfterUnauthorized(ctx context.Context, vaultID, targetHost string, targetPort int, targetPath string, rejected *InjectResult) (*InjectResult, error)
 }
 
 // CredentialStore is the minimal store surface used by StoreCredentialProvider.
@@ -110,6 +120,31 @@ func NewStoreCredentialProvider(s CredentialStore, encKey []byte) *StoreCredenti
 // stripped before matching. Pass "/" for targetPath when no path is
 // meaningful.
 func (p *StoreCredentialProvider) Inject(ctx context.Context, vaultID, targetHost string, targetPort int, targetPath string) (*InjectResult, error) {
+	return p.inject(ctx, vaultID, targetHost, targetPort, targetPath, nil)
+}
+
+// RefreshAfterUnauthorized refreshes only OAuth credentials used by the rejected request.
+// Matching and credential lookup run again, preserving current service policy.
+func (p *StoreCredentialProvider) RefreshAfterUnauthorized(ctx context.Context, vaultID, targetHost string, targetPort int, targetPath string, rejected *InjectResult) (*InjectResult, error) {
+	if rejected == nil || len(rejected.oauthTokens) == 0 || p.Refresher == nil || p.OAuthStore == nil {
+		return nil, nil
+	}
+	result, err := p.inject(ctx, vaultID, targetHost, targetPort, targetPath, rejected.oauthTokens)
+	if err != nil {
+		return nil, err
+	}
+	if result.MatchedName != rejected.MatchedName || result.MatchedHost != rejected.MatchedHost || result.MatchedPath != rejected.MatchedPath {
+		return nil, nil
+	}
+	for key := range result.oauthTokens {
+		if _, ok := rejected.oauthTokens[key]; ok {
+			return result, nil
+		}
+	}
+	return nil, nil
+}
+
+func (p *StoreCredentialProvider) inject(ctx context.Context, vaultID, targetHost string, targetPort int, targetPath string, rejected map[string]string) (*InjectResult, error) {
 	// A missing row is equivalent to an empty services list — fall
 	// through to the unmatched-host policy. Any other error fails closed
 	// so a transient store failure can't silently strip enforcement.
@@ -168,6 +203,7 @@ func (p *StoreCredentialProvider) Inject(ctx context.Context, vaultID, targetHos
 	// Memoize per-key lookups so a credential shared by auth and a
 	// substitution decrypts only once.
 	cache := make(map[string]string)
+	oauthTokens := make(map[string]string)
 	getCredential := func(key string) (string, error) {
 		if v, ok := cache[key]; ok {
 			return v, nil
@@ -197,12 +233,19 @@ func (p *StoreCredentialProvider) Inject(ctx context.Context, vaultID, targetHos
 		}
 
 		if cred.Type == "oauth" && p.Refresher != nil && p.OAuthStore != nil {
-			s, err = p.maybeRefreshOAuth(ctx, vaultID, key, s)
+			rejectedToken, force := rejected[key]
+			if force {
+				s = rejectedToken
+			}
+			s, err = p.refreshOAuth(ctx, vaultID, key, s, force)
 			if err != nil {
 				return "", err
 			}
 		}
 
+		if cred.Type == "oauth" {
+			oauthTokens[key] = s
+		}
 		cache[key] = s
 		return s, nil
 	}
@@ -247,6 +290,7 @@ func (p *StoreCredentialProvider) Inject(ctx context.Context, vaultID, targetHos
 		return result, fmt.Errorf("%w: %v", ErrCredentialMissing, err)
 	}
 
+	result.oauthTokens = oauthTokens
 	result.Headers = headers
 	result.Substitutions = resolvedSubs
 	return result, nil
@@ -254,25 +298,45 @@ func (p *StoreCredentialProvider) Inject(ctx context.Context, vaultID, targetHos
 
 const oauthRefreshBuffer = 5 * time.Minute
 
-func (p *StoreCredentialProvider) maybeRefreshOAuth(ctx context.Context, vaultID, key, currentToken string) (string, error) {
-	oauthCfg, err := p.OAuthStore.GetCredentialOAuth(ctx, vaultID, key)
-	if err != nil {
-		return currentToken, nil
+func (p *StoreCredentialProvider) refreshOAuth(ctx context.Context, vaultID, key, currentToken string, force bool) (string, error) {
+	// Keep ordinary valid-token reads outside the refresh flight. Otherwise a
+	// rejected-token recovery could join a no-op read and skip its forced refresh.
+	if !force {
+		cfg, err := p.OAuthStore.GetCredentialOAuth(ctx, vaultID, key)
+		if err != nil || cfg == nil || cfg.TokenExpiresAt == nil || time.Until(*cfg.TokenExpiresAt) > oauthRefreshBuffer || len(cfg.RefreshTokenCT) == 0 {
+			return currentToken, nil
+		}
 	}
-
-	if oauthCfg.TokenExpiresAt == nil {
-		return currentToken, nil
-	}
-	if time.Until(*oauthCfg.TokenExpiresAt) > oauthRefreshBuffer {
-		return currentToken, nil
-	}
-
-	if len(oauthCfg.RefreshTokenCT) == 0 {
-		return currentToken, nil
-	}
-
 	sfKey := vaultID + "|" + key
 	result := p.Refresher.Do(sfKey, func() oauth.RefreshResult {
+		// Re-read inside singleflight: an earlier refresh may have rotated both tokens
+		// before this caller entered. A late 401 must reuse the newer access token.
+		cred, err := p.Store.GetCredential(ctx, vaultID, key)
+		if err != nil || cred == nil || cred.Type != "oauth" {
+			return oauth.RefreshResult{Err: ErrOAuthRefreshFailed}
+		}
+		plaintext, err := crypto.Decrypt(cred.Ciphertext, cred.Nonce, p.EncKey)
+		if err != nil {
+			return oauth.RefreshResult{Err: ErrOAuthRefreshFailed}
+		}
+		latestToken := string(plaintext)
+		if latestToken == "" {
+			return oauth.RefreshResult{Err: ErrOAuthNotConnected}
+		}
+		if latestToken != currentToken {
+			return oauth.RefreshResult{AccessToken: latestToken, Refreshed: true}
+		}
+		oauthCfg, err := p.OAuthStore.GetCredentialOAuth(ctx, vaultID, key)
+		if err != nil || oauthCfg == nil {
+			return oauth.RefreshResult{}
+		}
+		if !force && (oauthCfg.TokenExpiresAt == nil || time.Until(*oauthCfg.TokenExpiresAt) > oauthRefreshBuffer) {
+			return oauth.RefreshResult{}
+		}
+		if len(oauthCfg.RefreshTokenCT) == 0 {
+			return oauth.RefreshResult{}
+		}
+
 		refreshToken, err := crypto.Decrypt(oauthCfg.RefreshTokenCT, oauthCfg.RefreshTokenNonce, p.EncKey)
 		if err != nil {
 			return oauth.RefreshResult{Err: fmt.Errorf("%w: decrypt refresh token: %v", ErrOAuthRefreshFailed, err)}
