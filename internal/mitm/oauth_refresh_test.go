@@ -95,6 +95,7 @@ func TestForwardOAuthUnauthorizedRecovery(t *testing.T) {
 					http.Error(w, "rejected", 400)
 					return
 				}
+				r.Body = http.MaxBytesReader(w, r.Body, 4096)
 				if err := r.ParseForm(); err != nil {
 					t.Error(err)
 				}
@@ -112,7 +113,7 @@ func TestForwardOAuthUnauthorizedRecovery(t *testing.T) {
 						select {
 						case <-bothStale:
 						case <-time.After(3 * time.Second):
-							http.Error(w, "concurrent request missing", 504)
+							http.Error(w, "concurrent request missing", http.StatusGatewayTimeout)
 							return
 						}
 					} else {
@@ -120,13 +121,13 @@ func TestForwardOAuthUnauthorizedRecovery(t *testing.T) {
 						select {
 						case <-accepted:
 						case <-time.After(3 * time.Second):
-							http.Error(w, "refresh did not recover", 504)
+							http.Error(w, "refresh did not recover", http.StatusGatewayTimeout)
 							return
 						}
 					}
 				}
 				if r.Header.Get("Authorization") != "Bearer accepted" || tc.alwaysReject {
-					http.Error(w, "provider rejection", 401)
+					http.Error(w, "provider rejection", http.StatusUnauthorized)
 					return
 				}
 				if tc.concurrent {
