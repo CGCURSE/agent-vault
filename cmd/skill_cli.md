@@ -97,6 +97,8 @@ The proxy finds the placeholder string and replaces it with the real credential.
 
 ## OAuth credentials
 
+For bodyless GET and HEAD requests, the proxy can recover from a provider 401 once. It refreshes the matched OAuth credential even when local expiry metadata says the token is valid. A stored refresh token is required. Static credentials, requests with bodies, and services with substitutions are not retried. If refresh fails or the retry transport fails, the original provider response is preserved.
+
 Some services use OAuth 2.0 instead of static API keys. Use `type: "oauth"` when the service requires OAuth authorization (e.g., Google APIs, services without long-lived API keys). Use the default (static) when the service provides API keys or personal access tokens.
 
 There are two ways to set up an OAuth credential:

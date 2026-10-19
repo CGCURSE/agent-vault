@@ -350,24 +350,31 @@ func (p *Proxy) forwardRequest(
 	// OAuth 401 retry: if the upstream rejected the token and we have an
 	// OAuth credential, force-refresh and retry once. Only safe methods
 	// (GET/HEAD) are retried — the request body is consumed and cannot be replayed.
-	if resp.StatusCode == http.StatusUnauthorized && inject != nil && !inject.Passthrough &&
-		(r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		_ = resp.Body.Close()
-		retryInject, retryErr := p.creds.Inject(r.Context(), scope.VaultID, host, port, r.URL.Path)
+	if refresher, ok := p.creds.(brokercore.UnauthorizedCredentialProvider); ok &&
+		resp.StatusCode == http.StatusUnauthorized && inject != nil && !inject.Passthrough &&
+		(r.Method == http.MethodGet || r.Method == http.MethodHead) && contentLength == 0 && len(inject.Substitutions) == 0 {
+		retryInject, retryErr := refresher.RefreshAfterUnauthorized(r.Context(), scope.VaultID, host, port, r.URL.Path, inject)
 		if retryErr == nil && retryInject != nil && retryInject.Headers != nil {
-			retryReq := outReq.Clone(outReq.Context())
+			// No change means no refresh was possible. Preserve the original response,
+			// including its body, rather than repeating a request with the rejected token.
+			changed := false
 			for k, v := range retryInject.Headers {
-				retryReq.Header.Set(k, v)
+				if outReq.Header.Get(k) != v {
+					changed = true
+				}
 			}
-			retryReq.Body = http.NoBody
-			retryReq.ContentLength = 0
-			if retryResp, retryRTErr := p.upstream.RoundTrip(retryReq); retryRTErr == nil {
-				resp = retryResp
-				p.logger.Debug("oauth 401 retry succeeded",
-					slog.String("host", host),
-					slog.String("path", r.URL.Path),
-					slog.Int("status", resp.StatusCode),
-				)
+			if changed {
+				retryReq := outReq.Clone(outReq.Context())
+				for k, v := range retryInject.Headers {
+					retryReq.Header.Set(k, v)
+				}
+				retryReq.Body = http.NoBody
+				retryReq.ContentLength = 0
+				retryResp, retryRTErr := p.upstream.RoundTrip(retryReq)
+				if retryRTErr == nil {
+					_ = resp.Body.Close()
+					resp = retryResp
+				}
 			}
 		}
 	}

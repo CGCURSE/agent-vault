@@ -179,6 +179,10 @@ Watch how Agent Vault brokers credentials for AI agents: store your keys once, r
 
 Want a full deployment walkthrough? See [Run Hermes on a VPS](https://docs.agent-vault.dev/guides/hermes-on-vps) for an end-to-end example with a brokered agent on a separate box.
 
+### OAuth recovery after provider rejection
+
+When a provider returns HTTP 401 for a bodyless GET or HEAD request, Agent Vault refreshes the matched OAuth credential and retries once. This recovery requires a stored refresh token, even if local expiry metadata still marks the access token as valid. Concurrent rejections reuse a token that another request has already refreshed. Static credentials, other methods, requests with bodies, and services with substitutions are not retried. If refresh fails or the retry transport fails, the original provider response is preserved.
+
 ## Best Practices
 
 1. Security:
